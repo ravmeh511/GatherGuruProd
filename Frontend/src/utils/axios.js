@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+// Use environment variable for API URL, fallback to localhost for development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -8,6 +9,7 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
 
 // Add a request interceptor to include the token
@@ -31,8 +33,16 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       // Clear local storage and redirect to login on unauthorized
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network error:', error.message);
+      // You could show a toast notification here
+    }
+    
     return Promise.reject(error);
   }
 );
