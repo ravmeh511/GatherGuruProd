@@ -123,14 +123,6 @@ app.use('/api', require('./routes/authRoutes'));
 app.use('/api/organizer', require('./routes/organizerRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 
-// Serve frontend (Vite build) in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../Frontend/dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
-  });
-}
-
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -147,7 +139,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+// Serve frontend (Vite build) in production — MUST be last
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../Frontend/dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
+  });
+}
+
+// 404 handler — only if nothing matched above
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
