@@ -8,12 +8,12 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
-// Load env vars
+// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// Security middleware
+// Security headers
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -25,62 +25,52 @@ app.use(helmet({
     },
 }));
 
-// Compression middleware
+// Enable gzip compression
 app.use(compression());
 
-// Rate limiting (reduced for free tier)
+// Rate limiting middleware
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // limit each IP to 50 requests per windowMs (reduced for free tier)
+    max: 50,
     message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
 
-// Middleware
-app.use(express.json({ limit: '5mb' })); // Reduced for free tier
-app.use(express.urlencoded({ extended: true, limit: '5mb' })); // Reduced for free tier
+// Body parser and cookies
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cookieParser());
 
-// CORS configuration
+// CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
     ? process.env.ALLOWED_ORIGINS.split(',') 
     : ['http://localhost:5173'];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Create uploads directory if it doesn't exist (for both dev and production)
+// Ensure uploads directories exist
+const fs = require('fs');
 const uploadsDir = path.join(__dirname, 'uploads');
 const eventBannersDir = path.join(uploadsDir, 'event-banners');
 const profileImagesDir = path.join(uploadsDir, 'profile-images');
 
-if (!require('fs').existsSync(uploadsDir)) {
-    require('fs').mkdirSync(uploadsDir);
-}
-if (!require('fs').existsSync(eventBannersDir)) {
-    require('fs').mkdirSync(eventBannersDir);
-}
-if (!require('fs').existsSync(profileImagesDir)) {
-    require('fs').mkdirSync(profileImagesDir);
-}
+[uploadsDir, eventBannersDir, profileImagesDir].forEach(dir => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+});
 
-// Serve uploaded files (both development and production)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files
+app.use('/uploads', express.static(uploadsDir));
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -89,25 +79,12 @@ app.get('/health', (req, res) => {
         environment: process.env.NODE_ENV || 'development',
         memory: process.memoryUsage(),
         storage: {
-            uploadsDir: uploadsDir,
-            eventBannersDir: eventBannersDir,
-            profileImagesDir: profileImagesDir
+            uploadsDir, eventBannersDir, profileImagesDir
         }
     });
 });
 
-// Test API endpoint
-// app.get('/test', (req, res) => {
-//     res.status(200).json({
-//         message: 'GatherGuru API is working!',
-//         timestamp: new Date().toISOString(),
-//         server: 'GatherGuru Backend',
-//         version: '1.0.0',
-//         status: 'success'
-//     });
-// });
-
-// Simple test endpoint
+// API test endpoint
 app.get('/api/test', (req, res) => {
     res.status(200).json({
         message: 'API endpoint is working!',
@@ -119,7 +96,7 @@ app.get('/api/test', (req, res) => {
     });
 });
 
-// Connect to MongoDB
+// MongoDB connection
 const connectDB = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/gatherguru', {
@@ -132,7 +109,6 @@ const connectDB = async () => {
         process.exit(1);
     }
 };
-
 connectDB();
 
 // Routes
@@ -141,27 +117,23 @@ app.use('/api', require('./routes/authRoutes'));
 app.use('/api/organizer', require('./routes/organizerRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 
-// Serve static files in production (if needed)
+// Serve frontend (Vite build) in production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../Frontend/dist')));
-    
     app.get('*', (req, res) => {
         res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
     });
 }
 
-// Error handling middleware
+// Global error handler
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    
-    // Handle CORS errors
     if (err.message === 'Not allowed by CORS') {
         return res.status(403).json({
             success: false,
             message: 'CORS policy violation'
         });
     }
-    
     res.status(500).json({
         success: false,
         message: err.message || 'Something went wrong!',
@@ -169,7 +141,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Handle 404
+// 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({
         success: false,
@@ -177,9 +149,9 @@ app.use('*', (req, res) => {
     });
 });
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
     console.log(`Health check available at: http://localhost:${PORT}/health`);
-    console.log(`Uploads directory: ${uploadsDir}`);
-}); 
+});
