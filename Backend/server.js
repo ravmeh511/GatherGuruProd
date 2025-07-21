@@ -118,6 +118,7 @@ const connectDB = async () => {
 connectDB();
 
 // Routes
+// Routes
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api', require('./routes/authRoutes'));
 app.use('/api/organizer', require('./routes/organizerRoutes'));
@@ -139,21 +140,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Serve frontend (Vite build) in production — MUST be last
+// 404 handler for API
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'API route not found',
+  });
+});
+
+// Serve frontend (Vite build) in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../Frontend/dist')));
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
   });
 }
-
-// 404 handler — only if nothing matched above
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-  });
-});
 
 // Start server
 const PORT = process.env.PORT || 5000;
