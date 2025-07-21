@@ -97,15 +97,15 @@ app.get('/health', (req, res) => {
 });
 
 // Test API endpoint
-app.get('/test', (req, res) => {
-    res.status(200).json({
-        message: 'GatherGuru API is working!',
-        timestamp: new Date().toISOString(),
-        server: 'GatherGuru Backend',
-        version: '1.0.0',
-        status: 'success'
-    });
-});
+// app.get('/test', (req, res) => {
+//     res.status(200).json({
+//         message: 'GatherGuru API is working!',
+//         timestamp: new Date().toISOString(),
+//         server: 'GatherGuru Backend',
+//         version: '1.0.0',
+//         status: 'success'
+//     });
+// });
 
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
