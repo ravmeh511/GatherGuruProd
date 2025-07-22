@@ -246,7 +246,7 @@ const EventSection = ({ title, events, formatDate, navigate }) => {
                   onClick={() => navigate(`/events/${event._id}`)}
                 >
                   <img
-                    src={`https://gatherguru.ca/api/${event.bannerImage}`}
+                    src={`https://gatherguru.ca/api${event.bannerImage}`}
                     alt={event.title}
                     className="w-full h-48 object-cover"
                     onError={(e) => {
