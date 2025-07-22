@@ -271,7 +271,9 @@ const EventSection = ({ title, events, formatDate, navigate }) => {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-yellow-400 font-medium">
-                      {event.ticketing?.[0]?.price ? `INR ${event.ticketing[0].price}` : 'Free'}
+                      {event.ticketing?.length && event.ticketing[0]?.price
+                        ? `INR ${event.ticketing[0].price}`
+                        : 'Free'}
                     </span>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center text-gray-400 text-sm">
